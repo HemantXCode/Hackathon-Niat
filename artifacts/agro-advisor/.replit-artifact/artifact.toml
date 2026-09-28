@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "AgroAdvisor AI"
+description = "A mobile-first agricultural advisory app for farmers and agronomists to create crop plans, diagnose pest and disease symptoms, and revisit structured AI guidance."
+version = "1.0.0"
+id = "artifacts/agro-advisor"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23703
+
+[services.development]
+run = "pnpm --filter @workspace/agro-advisor run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/agro-advisor", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/agro-advisor/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23703"
+BASE_PATH = "/"

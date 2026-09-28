@@ -1,15 +1,16 @@
-# [Project name]
+# AgroAdvisor AI
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+AgroAdvisor AI helps farmers and agronomists create crop plans, diagnose pest and disease symptoms, and revisit structured agricultural guidance.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server
+- `pnpm --filter @workspace/agro-advisor run dev` — run the Vite web app
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `DATABASE_URL` and `GEMINI_API_KEY`
 
 ## Stack
 
@@ -22,23 +23,37 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — source of truth for the advisory API contract
+- `lib/db/src/schema/advisories.ts` — PostgreSQL tables for demo user, advisory requests, and AI responses
+- `artifacts/api-server/src/routes/advisor.ts` — crop and pest advisory creation
+- `artifacts/api-server/src/routes/history.ts` — dashboard, history, and report detail
+- `artifacts/api-server/src/lib/ai.ts` — Gemini structured generation plus safe fallback guidance
+- `artifacts/agro-advisor/src/` — responsive React UI and advisory report views
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The first build uses a single demo user ID to keep the product flow usable without adding an auth surface.
+- Gemini calls stay server-side and request JSON through `responseSchema`; the browser only receives validated report objects.
+- Advisory history is split into request and response tables to match the prompt and keep each generated report queryable.
+- When Gemini is unavailable, the server returns deterministic agronomy guidance rather than failing the field workflow completely.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Dashboard with new crop planning and pest diagnosis entry points
+- Zod-validated crop and pest advisory forms
+- Structured crop viability cards, soil preparation tips, diagnoses, IPM actions, and prevention guidance
+- Searchable, filterable saved history and full report detail pages
+- Mobile-first layout with responsive navigation and API health indicator
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+No project-specific preferences recorded.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Run API codegen after changing `lib/api-spec/openapi.yaml`.
+- Rebuild shared libraries after schema changes before typechecking the API server.
+- The API and web services are managed workflows; use their existing workflow names rather than creating duplicate workflows.
 
 ## Pointers
 

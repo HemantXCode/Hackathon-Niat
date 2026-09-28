@@ -1,0 +1,7 @@
+import { ArrowLeft, Compass } from 'lucide-react';
+import { Link } from 'wouter';
+import { AppShell } from '@/components/layout';
+
+export default function NotFound() {
+  return <AppShell><div className="mx-auto flex min-h-[60vh] max-w-[720px] items-center justify-center"><div className="w-full rounded-[26px] border border-[hsl(var(--border))] bg-[hsl(var(--card)/.76)] px-7 py-12 text-center shadow-sm md:px-14"><div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[hsl(var(--accent)/.55)] text-[hsl(var(--primary))]"><Compass size={28} /></div><p className="mb-3 font-mono text-[10px] uppercase tracking-[.2em] text-[hsl(var(--primary))]">A path not mapped</p><h1 className="font-serif text-3xl font-bold tracking-[-.04em]">This page is outside the field desk.</h1><p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[hsl(var(--muted-foreground))]">The report or route you were looking for is not here. Head back to the overview and choose a clear next step.</p><Link href="/" data-testid="link-return-overview" className="mx-auto mt-7 flex w-fit items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-3 text-sm font-semibold text-[hsl(var(--primary-foreground))]"><ArrowLeft size={16} /> Return to overview</Link></div></div></AppShell>;
+}

@@ -1,0 +1,284 @@
+Here is the exhaustive, production-grade Master Prompt tailored exactly to the structure and technology stack requested. You can copy and paste this entire block directly into any advanced coding agent (Cursor, Claude Code, Replit Agent, Bolt) to build the complete AI-Powered Agriculture Crop Advisory Assistant.
+
+---
+
+### 1. Header & System Persona Role
+
+You are an Elite Principal Full-Stack Engineer, Lead AI Systems Architect, and UI/UX Expert. You possess deep expertise in React.js, Node.js, Express, PostgreSQL, Tailwind CSS, and the latest `@google/genai` SDK. Your task is to build a complete, production-ready, full-stack web application called "AgroAdvisor AI". You write exceptionally clean, strictly typed, modular, and performant code.
+
+### 2. Core Mission Directive
+
+You must implement this application end-to-end. **DO NOT leave placeholders, TODOs, or mock functions.** Write every line of code required for the database, backend APIs, AI integration, and frontend components. Ensure complete error handling, loading states, and edge-case management. If a component is listed, it must be fully built and styled. Follow all security and architecture guidelines strictly.
+
+### 3. Product Goal
+
+Build "AgroAdvisor AI", an intelligent agricultural extension application designed for farmers and agronomists. The platform allows users to input soil characteristics, climate data, and crop symptoms to receive highly tailored, AI-generated crop recommendations, fertilizer schedules, and pest/disease diagnoses using Google's Gemini AI. The UI must be mobile-first, as it will primarily be used in the field.
+
+### 4. Mandatory Features
+
+1. **Intelligent Crop Recommender:** Suggests the most profitable and viable crops based on region, soil type, and water availability.
+2. **Pest & Disease Diagnostician:** Analyzes textual descriptions of crop symptoms to identify likely diseases and generate an Integrated Pest Management (IPM) plan.
+3. **Structured AI Outputs:** The backend must force Gemini to return strict JSON using structured output schemas to render dynamic UI cards (not raw markdown).
+4. **Advisory History:** A persistent dashboard where users can view and revisit their past AI consultations.
+5. **Mobile-First Responsive UI:** The frontend must be perfectly usable on small mobile screens out in the field.
+
+### 5. Technology Requirements
+
+* **Frontend:** React.js (Vite), React Router DOM, Tailwind CSS, Lucide React (for icons).
+* **Backend:** Node.js, Express.js, Cors, dotenv.
+* **Database:** PostgreSQL (specifically Replit Postgres or standard `pg` pool).
+* **AI Integration:** `@google/genai` (Google's official GenAI SDK).
+* **Validation:** Zod (for validating frontend forms and backend API payloads).
+
+### 6. Application Pages (Routes)
+
+* `/` - **Dashboard:** Overview of the tool, quick links to start a consultation, and a summary of recent history.
+* `/advisor/crop` - **Crop Recommendation Engine:** Multi-step form capturing environmental and soil data.
+* `/advisor/pest` - **Pest & Disease Diagnosis:** Form for inputting crop types, affected parts, and symptom descriptions.
+* `/history` - **Consultation Log:** A searchable list of all past AI advisory reports.
+
+### 7. User Flow
+
+1. User lands on the Dashboard and clicks "New Crop Plan" or "Diagnose Pest".
+2. User fills out a Zod-validated React form with their agricultural parameters.
+3. Upon submission, a loading skeleton appears while the frontend POSTs to the Express backend.
+4. The Express backend validates the payload, constructs the Gemini prompt, and requests structured JSON from `@google/genai`.
+5. The backend saves the user input and the AI's JSON response to the PostgreSQL database.
+6. The backend returns the JSON to the frontend.
+7. The frontend renders the AI response in beautiful, easy-to-read, actionable Tailwind cards.
+
+### 8. Target Domains & Categorization
+
+* **Soil Types:** Clay, Sandy, Silty, Peaty, Chalky, Loam.
+* **Climate Zones:** Tropical, Arid, Temperate, Continental, Polar.
+* **Crop Categories:** Cereals & Grains, Pulses, Cash Crops (Cotton, Sugarcane), Horticulture (Fruits/Vegetables).
+* **Water Availability:** Rainfed only, Drip Irrigation, Flood Irrigation, Sprinkler.
+
+### 9. Form & Advisory Configuration
+
+**Crop Recommendation Form Fields:**
+
+* `location` (String) - Region/State.
+* `soilType` (Select) - Dropdown of Target Domains.
+* `climateZone` (Select) - Dropdown of Target Domains.
+* `waterAvailability` (Select) - Dropdown of Target Domains.
+* `farmSizeAcres` (Number) - Size of the land.
+
+**Pest Diagnosis Form Fields:**
+
+* `cropName` (String) - E.g., Tomato, Wheat.
+* `plantPartAffected` (Select) - Roots, Stem, Leaves, Fruit/Flower.
+* `symptomDescription` (Textarea) - Detailed text description.
+* `durationDays` (Number) - How long the symptoms have been visible.
+
+### 10. Database Schema (Production SQL for PostgreSQL)
+
+Execute this schema using standard `pg` queries on startup or provide an initialization script.
+
+```sql
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS advisory_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id),
+    advisory_type VARCHAR(50) NOT NULL, -- 'CROP_REC' or 'PEST_DIAG'
+    input_payload JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS ai_responses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    request_id UUID REFERENCES advisory_requests(id) ON DELETE CASCADE,
+    structured_data JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+```
+
+*(Note: For this MVP, you may hardcode a single test `user_id` in the backend middleware to simulate an authenticated session).*
+
+### 11. Row Level Security (RLS) / Data Isolation Rules
+
+Since we are using standard Postgres via an Express backend:
+
+1. Create a mock authentication middleware in Express that attaches a test user ID to the `req` object.
+2. Every database `SELECT`, `INSERT`, or `UPDATE` for `advisory_requests` and `ai_responses` MUST strictly filter by `WHERE user_id = $1`.
+3. Never return records belonging to another user.
+
+### 12. Backend API Routes
+
+Implement these robust Express routes:
+
+* `POST /api/advisor/crop` - Accepts crop form data, calls Gemini for structured JSON, saves to DB, returns JSON.
+* `POST /api/advisor/pest` - Accepts pest form data, calls Gemini for structured JSON, saves to DB, returns JSON.
+* `GET /api/history` - Fetches all `advisory_requests` joined with `ai_responses` for the authenticated user, ordered by `created_at DESC`.
+* `GET /api/history/:id` - Fetches a specific detailed report.
+
+### 13. Gemini SDK Setup & Server-Side Security
+
+You MUST use the exact `@google/genai` SDK package.
+
+```javascript
+const { GoogleGenAI } = require('@google/genai');
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Use ai.models.generateContent({ model: 'gemini-2.5-flash', ... })
+
+```
+
+* **Security:** All Gemini API calls MUST occur on the Node.js backend. Never expose the `GEMINI_API_KEY` to the React frontend.
+
+### 14. AI System Prompt
+
+Inject this system instruction into your Gemini API calls:
+*"You are AgroAdvisor AI, an expert, highly knowledgeable, and empathetic agricultural extension assistant. Your goal is to help farmers make sustainable, profitable decisions. Always prioritize organic and Integrated Pest Management (IPM) solutions before chemical interventions. If recommending chemicals, mandate the use of PPE. Format all responses strictly in the requested JSON schema without markdown blocks."*
+
+### 15. Detailed AI Prompts (with required JSON Schemas)
+
+You must enforce structured outputs via the `responseSchema` property in the Gemini SDK.
+
+**Crop Recommendation Schema:**
+
+```json
+{
+  "type": "OBJECT",
+  "properties": {
+    "recommendedCrops": {
+      "type": "ARRAY",
+      "items": {
+        "type": "OBJECT",
+        "properties": {
+          "cropName": { "type": "STRING" },
+          "viabilityScore": { "type": "INTEGER", "description": "0-100 score" },
+          "expectedYieldPerAcre": { "type": "STRING" },
+          "waterRequirements": { "type": "STRING" },
+          "whyItFits": { "type": "STRING", "description": "2-3 sentences explaining why it fits the soil/climate" }
+        },
+        "required": ["cropName", "viabilityScore", "expectedYieldPerAcre", "waterRequirements", "whyItFits"]
+      }
+    },
+    "soilPreparationTips": { "type": "ARRAY", "items": { "type": "STRING" } }
+  },
+  "required": ["recommendedCrops", "soilPreparationTips"]
+}
+
+```
+
+**Pest Diagnosis Schema:**
+
+```json
+{
+  "type": "OBJECT",
+  "properties": {
+    "likelyDiagnoses": {
+      "type": "ARRAY",
+      "items": {
+        "type": "OBJECT",
+        "properties": {
+          "diseaseOrPestName": { "type": "STRING" },
+          "confidenceLevel": { "type": "STRING", "description": "High, Medium, or Low" },
+          "symptomsMatch": { "type": "STRING" }
+        },
+        "required": ["diseaseOrPestName", "confidenceLevel", "symptomsMatch"]
+      }
+    },
+    "immediateActions": { "type": "ARRAY", "items": { "type": "STRING" } },
+    "longTermPrevention": { "type": "ARRAY", "items": { "type": "STRING" } }
+  },
+  "required": ["likelyDiagnoses", "immediateActions", "longTermPrevention"]
+}
+
+```
+
+### 16. Zod Validation Requirements
+
+Both the React frontend and Express backend must use Zod to validate payloads.
+Example:
+
+```javascript
+const pestSchema = z.object({
+  cropName: z.string().min(2, "Crop name is required"),
+  plantPartAffected: z.enum(["Roots", "Stem", "Leaves", "Fruit/Flower"]),
+  symptomDescription: z.string().min(10, "Please provide more detail"),
+  durationDays: z.number().positive()
+});
+
+```
+
+Validate `req.body` in Express before querying Gemini or the DB.
+
+### 17. Frontend Components List
+
+Build these reusable React components using Tailwind CSS:
+
+* `Layout` - Wraps the app with a responsive Sidebar/Navbar and main content area.
+* `AdvisoryForm` - A reusable form wrapper handling Zod validation, error states, and submission.
+* `CropResultCard` - A visually appealing card to display a single recommended crop (shows viability score as a progress bar).
+* `PestDiagnosisCard` - Displays the disease name, confidence badge (Green/Yellow/Red), and treatment steps.
+* `EmptyState` - Displayed when history is empty.
+* `LoadingSkeleton` - Shimmer effect while waiting for the Gemini API.
+
+### 18. Security Requirements
+
+* Enable `cors` middleware in Express, restricted to the Vite frontend origin.
+* Wrap all async Express routes in a `try/catch` block and return standard `{ error: string }` objects on failure.
+* Sanitize database inputs using parameterized queries (e.g., `db.query('INSERT INTO... VALUES ($1)', [val])`).
+* Implement an Express error handler middleware.
+
+### 19. Environment Variables Template
+
+Provide a `.env.example` file:
+
+```env
+PORT=5000
+DATABASE_URL=postgresql://user:password@host:port/dbname
+GEMINI_API_KEY=your_google_gemini_api_key
+VITE_API_BASE_URL=http://localhost:5000/api
+
+```
+
+### 20. Suggested Folder Structure
+
+```text
+/agro-advisor
+  /client
+    /src
+      /components
+      /pages
+      /lib
+      App.jsx
+      main.jsx
+  /server
+    /controllers
+    /routes
+    /services (Gemini logic)
+    /db
+    server.js
+  package.json (Root workspace if applicable)
+
+```
+
+### 21. Implementation Phases
+
+* **Phase 1: Foundation.** Initialize Node/Express server, React/Vite client, and configure Tailwind and standard routing.
+* **Phase 2: Database & Backend.** Set up PostgreSQL schema, create the mock auth middleware, and build the DB query utilities.
+* **Phase 3: AI Integration.** Implement the `@google/genai` service in Node.js. Test the structured JSON outputs with hardcoded prompts.
+* **Phase 4: API Routes.** Wire the Zod validation, DB saving, and AI service into the Express routes.
+* **Phase 5: Frontend UI & State.** Build the dashboard, forms, loading states, and result cards. Connect frontend API calls to the backend.
+* **Phase 6: Polish.** Add error toasts, handle responsive layouts for mobile, and ensure all routing works flawlessly.
+
+### 22. Acceptance Criteria
+
+* The app compiles and runs without console errors.
+* Users can submit a pest or crop form and receive a beautifully structured UI response (not raw text).
+* All requests and AI responses are successfully stored in PostgreSQL.
+* The history page correctly retrieves and displays past consultations.
+* `@google/genai` is used correctly with the `responseSchema` configuration.
+* The UI is completely responsive and looks professional on a mobile viewport.
+
+### 23. Final Instruction to Coding Agent
+
+Acknowledge this entire prompt. Do not ask for clarification. Begin executing **Phase 1** immediately, writing the complete folder structure and initialization code. Once Phase 1 is complete, automatically proceed to Phase 2, writing every single line of required code until the entire application meets the Acceptance Criteria.

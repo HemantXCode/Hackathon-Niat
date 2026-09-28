@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: advisor
+    description: AI-powered agricultural advisory operations
+  - name: history
+    description: Saved advisory history and dashboard activity
 paths:
   /healthz:
     get:
@@ -24,6 +28,117 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /advisor/crop:
+    post:
+      operationId: createCropAdvisory
+      tags: [advisor]
+      summary: Generate a crop recommendation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CropAdvisoryInput"
+      responses:
+        "201":
+          description: Structured crop recommendation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdvisoryReport"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /advisor/pest:
+    post:
+      operationId: createPestAdvisory
+      tags: [advisor]
+      summary: Diagnose a crop pest or disease
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PestAdvisoryInput"
+      responses:
+        "201":
+          description: Structured pest diagnosis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdvisoryReport"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /history:
+    get:
+      operationId: listAdvisoryHistory
+      tags: [history]
+      summary: List saved advisory reports
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [all, CROP_REC, PEST_DIAG]
+            default: all
+      responses:
+        "200":
+          description: Advisory history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdvisorySummary"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /history/{id}:
+    get:
+      operationId: getAdvisoryReport
+      tags: [history]
+      summary: Get a saved advisory report
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Detailed advisory report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdvisoryReport"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /dashboard:
+    get:
+      operationId: getDashboardSummary
+      tags: [history]
+      summary: Get dashboard summary and recent activity
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+        "500":
+          $ref: "#/components/responses/ServerError"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +148,176 @@ components:
           type: string
       required:
         - status
+    CropAdvisoryInput:
+      type: object
+      properties:
+        location:
+          type: string
+          minLength: 2
+          maxLength: 120
+        soilType:
+          type: string
+          enum: [Clay, Sandy, Silty, Peaty, Chalky, Loam]
+        climateZone:
+          type: string
+          enum: [Tropical, Arid, Temperate, Continental, Polar]
+        waterAvailability:
+          type: string
+          enum: [Rainfed only, Drip Irrigation, Flood Irrigation, Sprinkler]
+        farmSizeAcres:
+          type: number
+          exclusiveMinimum: 0
+          maximum: 100000
+      required: [location, soilType, climateZone, waterAvailability, farmSizeAcres]
+    PestAdvisoryInput:
+      type: object
+      properties:
+        cropName:
+          type: string
+          minLength: 2
+          maxLength: 80
+        plantPartAffected:
+          type: string
+          enum: [Roots, Stem, Leaves, Fruit/Flower]
+        symptomDescription:
+          type: string
+          minLength: 10
+          maxLength: 2000
+        durationDays:
+          type: integer
+          minimum: 1
+          maximum: 3650
+      required: [cropName, plantPartAffected, symptomDescription, durationDays]
+    CropRecommendation:
+      type: object
+      properties:
+        cropName:
+          type: string
+        viabilityScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        expectedYieldPerAcre:
+          type: string
+        waterRequirements:
+          type: string
+        whyItFits:
+          type: string
+      required: [cropName, viabilityScore, expectedYieldPerAcre, waterRequirements, whyItFits]
+    CropAdvisoryData:
+      type: object
+      properties:
+        recommendedCrops:
+          type: array
+          items:
+            $ref: "#/components/schemas/CropRecommendation"
+        soilPreparationTips:
+          type: array
+          items:
+            type: string
+      required: [recommendedCrops, soilPreparationTips]
+    PestDiagnosis:
+      type: object
+      properties:
+        diseaseOrPestName:
+          type: string
+        confidenceLevel:
+          type: string
+          enum: [High, Medium, Low]
+        symptomsMatch:
+          type: string
+      required: [diseaseOrPestName, confidenceLevel, symptomsMatch]
+    PestAdvisoryData:
+      type: object
+      properties:
+        likelyDiagnoses:
+          type: array
+          items:
+            $ref: "#/components/schemas/PestDiagnosis"
+        immediateActions:
+          type: array
+          items:
+            type: string
+        longTermPrevention:
+          type: array
+          items:
+            type: string
+      required: [likelyDiagnoses, immediateActions, longTermPrevention]
+    AdvisoryReport:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        advisoryType:
+          type: string
+          enum: [CROP_REC, PEST_DIAG]
+        inputPayload:
+          oneOf:
+            - $ref: "#/components/schemas/CropAdvisoryInput"
+            - $ref: "#/components/schemas/PestAdvisoryInput"
+        structuredData:
+          oneOf:
+            - $ref: "#/components/schemas/CropAdvisoryData"
+            - $ref: "#/components/schemas/PestAdvisoryData"
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, advisoryType, inputPayload, structuredData, createdAt]
+    AdvisorySummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        advisoryType:
+          type: string
+          enum: [CROP_REC, PEST_DIAG]
+        title:
+          type: string
+        subtitle:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, advisoryType, title, subtitle, createdAt]
+    DashboardSummary:
+      type: object
+      properties:
+        totalConsultations:
+          type: integer
+        cropPlans:
+          type: integer
+        pestDiagnoses:
+          type: integer
+        recent:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdvisorySummary"
+      required: [totalConsultations, cropPlans, pestDiagnoses, recent]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+  responses:
+    BadRequest:
+      description: Invalid request payload
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServerError:
+      description: Server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
 
